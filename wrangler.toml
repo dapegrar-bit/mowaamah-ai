@@ -3,31 +3,25 @@ name = "mowaamah-ai"
 main = "src/worker.js"
 compatibility_date = "2026-10-01"
 
-# Cloudflare Workers AI
+# Workers AI
 [ai]
 binding = "AI"
 
-# Website files
+# Website assets
 [assets]
 directory = "./public"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
-# Mowaamah settings
+# Free daily limits
 [vars]
 DAILY_LIMIT = "12"
 SEARCH_DAILY_LIMIT = "3"
+
+# AI model
 MODEL = "@cf/google/gemma-4-26b-a4b-it"
 
-# KV database for daily usage limits
-# IMPORTANT:
-# Replace the ID below with your real LIMITS namespace ID.
-# Then remove # from the three lines.
-
-# [[kv_namespaces]]
-# binding = "LIMITS"
-# id = "YOUR_REAL_KV_NAMESPACE_ID"
-
-# Internet search:
-# Add TAVILY_API_KEY as a Cloudflare Secret.
-# Never put the API key in this file.
+# KV database
+[[kv_namespaces]]
+binding = "LIMITS"
+id = "7269a14cb43f4ecaafcdaeb11bf9605d"
