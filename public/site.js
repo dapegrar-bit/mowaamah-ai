@@ -1,0 +1,1 @@
+(()=>{const theme=localStorage.getItem('mowaamah-theme');if(theme==='night')document.body.classList.add('night');const b=document.getElementById('theme-toggle');if(b)b.addEventListener('click',()=>{const on=document.body.classList.toggle('night');localStorage.setItem('mowaamah-theme',on?'night':'day');b.textContent=on?'☀ الوضع الفاتح':'☾ الوضع الداكن'});})();

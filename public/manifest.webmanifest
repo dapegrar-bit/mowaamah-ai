@@ -1,0 +1,17 @@
+{
+  "name": "مواءمة | Mowaamah",
+  "short_name": "مواءمة",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#15103d",
+  "theme_color": "#6544b4",
+  "description": "مساعد مواءمة الذكي وبرامج مواءمة المهنية",
+  "icons": [
+    {
+      "src": "/assets/moaamah-logo.jpg",
+      "sizes": "any",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

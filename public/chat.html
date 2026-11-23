@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#6a45c2">
+  <title>المحادثة | مواءمة AI</title>
+  <link rel="stylesheet" href="/app.css">
+<link rel="manifest" href="/manifest.webmanifest"></head>
+<body><a class="skip-link" href="#main-content">الانتقال إلى المحتوى</a>
+  <header class="topbar">
+    <div class="container inner">
+      <a class="brand" href="/"><img class="brand-logo" src="/assets/moaamah-logo.jpg" alt="شعار مواءمة"><div>مواءمة AI<small>مساعد ذكي عام</small></div></a>
+      <nav class="nav"><a href="/">الرئيسية</a><a class="active" href="/chat.html">المحادثة</a><a href="/programs.html">البرامج</a><a href="/about.html">من نحن</a><a href="/faq.html">الأسئلة الشائعة</a></nav>
+      <a class="btn btn-secondary" href="/programs.html">استكشف البرامج</a>
+    </div>
+  </header>
+
+  <main id="main-content" class="container chat-layout">
+    <aside class="panel sidebar">
+      <div class="brand-box">
+        <strong style="font-size:22px;display:block;margin-bottom:8px">مواءمة AI</strong>
+        <div style="line-height:1.9;color:#ece9ff">اسأل عن الأعمال، التقنية، التعلم، أو أي من برامج مواءمة.</div>
+      </div>
+      <nav>
+        <a class="active" href="#" id="new-chat-link">＋ محادثة جديدة</a>
+        <a href="/programs.html">▤ صفحة البرامج</a>
+        <a href="/">⌂ الصفحة الرئيسية</a>
+      </nav>
+      <div class="notice" style="margin-top:18px">
+        <strong>الحصص المجانية</strong><br>
+        هذه الواجهة تعرض المتبقي من الرسائل والبحث يوميًا لكل زائر.
+      </div>
+      <div class="program-mini" id="program-mini"></div>
+    </aside>
+
+    <section class="panel chat-shell">
+      <div class="chat-top">
+        <div>
+          <strong style="font-size:20px">مواءمة — المحادثة والبحث الذكي</strong>
+          <div class="muted">نسخة عامة للزوار — متصلة بالنموذج والبحث عند التفعيل</div>
+        </div>
+        <div class="chat-header-actions"><button class="btn btn-secondary btn-small" id="theme-toggle" type="button">☾ الوضع الداكن</button><button class="btn btn-secondary btn-small" id="copy-chat" type="button">نسخ المحادثة</button><button class="btn btn-secondary btn-small" id="export-chat" type="button">تصدير TXT</button></div><div class="quota-box">
+          <span class="chip" id="chat-quota">جاري قراءة الحصة...</span>
+          <span class="chip" id="search-quota">...</span>
+        </div>
+      </div>
+      <div class="chat-thread" id="thread" aria-live="polite" tabindex="0"></div>
+      <form id="chat-form" class="chat-composer">
+        <div class="chat-tools">
+          <div class="tagline">
+            <label class="chip"><input type="checkbox" id="search-toggle"> تفعيل البحث في الإنترنت</label>
+            <span class="chip" id="search-status">التحقق من توفر البحث...</span>
+          </div>
+          <div class="tagline">
+            <button class="btn btn-secondary" type="button" id="quick-program">لخّص برامج مواءمة</button>
+            <button class="btn btn-secondary" type="button" id="quick-general">اقترح استخدامات مواءمة AI</button>
+          </div>
+        </div>
+        <div class="composer-box">
+          <textarea id="message" required maxlength="3500" placeholder="اسأل مواءمة أي سؤال أو فعّل البحث في الإنترنت..."></textarea>
+          <button class="btn btn-primary" id="send" type="submit">إرسال</button>
+        </div>
+        <div class="input-note">لا تشارك بيانات حساسة. يمكن نسخ المحادثة أو تصديرها محليًا. قد يخطئ الذكاء الاصطناعي. تحققي من المعلومات المهمة، خصوصًا عند استخدام البحث.</div>
+      </form>
+    </section>
+  </main>
+
+  <script src="/data/programs.js"></script>
+  <script>
+    const thread = document.getElementById('thread');
+    const form = document.getElementById('chat-form');
+    const messageInput = document.getElementById('message');
+    const sendBtn = document.getElementById('send');
+    const searchToggle = document.getElementById('search-toggle');
+    const searchStatus = document.getElementById('search-status');
+    const chatQuota = document.getElementById('chat-quota');
+    const searchQuota = document.getElementById('search-quota');
+    const programMini = document.getElementById('program-mini');
+    const newChatLink = document.getElementById('new-chat-link');
+    const params = new URLSearchParams(location.search);
+    const suggestedProgram = params.get('program');
+    let history = [];
+    const short = (x,max=200000)=>String(x||'').slice(0,max);
+    function transcript(){return history.map(x=>(x.role==='user'?'الزائر: ':'مواءمة: ')+x.content).join('\n\n')}
+    async function copyChat(){try{await navigator.clipboard.writeText(transcript());alert('تم نسخ المحادثة')}catch{alert('تعذّر النسخ')}}
+    document.getElementById('copy-chat').addEventListener('click',copyChat);
+    document.getElementById('export-chat').addEventListener('click',()=>{const blob=new Blob([transcript()||'لا توجد محادثة بعد'],{type:'text/plain;charset=utf-8'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='mowaamah-chat.txt';a.click();URL.revokeObjectURL(u)});
+    let searchEnabled = false;
+
+    function addBubble(text, cls, sources = []) {
+      const el = document.createElement('div');
+      el.className = 'bubble ' + cls;
+      el.textContent = text;
+      if (sources.length) {
+        const box = document.createElement('div');
+        box.className = 'sources';
+        const label = document.createElement('div');
+        label.textContent = 'المصادر:';
+        box.appendChild(label);
+        sources.forEach(src => {
+          const a = document.createElement('a');
+          a.href = src.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+          a.textContent = src.title || src.url;
+          box.appendChild(a);
+        });
+        el.appendChild(box);
+      }
+      thread.appendChild(el);
+      thread.scrollTop = thread.scrollHeight;
+      return el;
+    }
+
+    function resetChat() {
+      history = [];
+      thread.innerHTML = '';
+      const initial = suggestedProgram
+        ? `مرحبًا بكِ في مواءمة ✨\nيمكنني مساعدتك في التعرف على البرنامج التالي: ${((window.MOWAAMAH_PROGRAMS || []).find(p => p.slug === suggestedProgram) || {}).name || suggestedProgram}.\nاسأليني عن مميزاته أو الفرق بينه وبين باقي البرامج.`
+        : 'مرحبًا بكِ في مواءمة ✨\nأنا مساعد عام للزوار، ويمكنني أيضًا توضيح برامج مواءمة وفروقاتها.';
+      addBubble(initial, 'bot');
+    }
+
+    function renderMiniPrograms() {
+      programMini.innerHTML = (window.MOWAAMAH_PROGRAMS || []).slice(0, 4).map(p => `
+        <a class="program-mini-item" href="/program.html?slug=${p.slug}">
+          <b>${p.shortName}</b>
+          <span>${p.summary}</span>
+        </a>
+      `).join('');
+    }
+
+    async function loadQuota() {
+      try {
+        const res = await fetch('/api/quota');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'quota');
+        chatQuota.textContent = `الرسائل المتبقية اليوم: ${data.chatRemaining} / ${data.chatLimit}`;
+        searchQuota.textContent = `البحث المتبقي اليوم: ${data.searchRemaining} / ${data.searchLimit}`;
+        searchEnabled = !!data.searchEnabled;
+        searchToggle.disabled = !searchEnabled; if (!searchEnabled) searchToggle.checked = false;
+        searchStatus.textContent = searchEnabled ? 'البحث متاح' : 'البحث غير مفعّل على الخادم';
+      } catch (e) {
+        chatQuota.textContent = 'تعذر قراءة الحصص';
+        searchQuota.textContent = 'حاولي لاحقًا';
+        searchStatus.textContent = 'تعذر التحقق من البحث';
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = messageInput.value.trim();
+      if (!text) return;
+      addBubble(text, 'me');
+      const oldHistory = history.slice(-6);
+      messageInput.value = '';
+      const pending = addBubble('مواءمة يفكر الآن...', 'bot');
+      sendBtn.disabled = true;
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {'content-type': 'application/json'},
+          body: JSON.stringify({
+            message: text,
+            search: searchToggle.checked,
+            history: oldHistory,
+            contextHint: suggestedProgram || null
+          })
+        });
+        const data = await res.json();
+        pending.remove();
+        if (!res.ok) {
+          addBubble(data.error || 'تعذرت المعالجة.', 'bot');
+        } else {
+          addBubble(data.answer, 'bot', data.sources || []);
+          history.push({role:'user', content:text}, {role:'assistant', content:data.answer});
+          chatQuota.textContent = `الرسائل المتبقية اليوم: ${data.remainingChat} / ${data.chatLimit}`;
+          searchQuota.textContent = `البحث المتبقي اليوم: ${data.remainingSearch} / ${data.searchLimit}`;
+        }
+      } catch (err) {
+        pending.remove();
+        addBubble('تعذر الاتصال بالخادم. تحققي من النشر والاتصال.', 'bot');
+      } finally {
+        sendBtn.disabled = false;
+        messageInput.focus();
+      }
+    });
+
+    messageInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+    });
+    newChatLink.addEventListener('click', (e) => { e.preventDefault(); resetChat(); });
+    document.getElementById('quick-program').addEventListener('click', () => {
+      messageInput.value = 'لخّصي لي برامج مواءمة والفرق بينها بشكل مختصر.';
+      messageInput.focus();
+    });
+    document.getElementById('quick-general').addEventListener('click', () => {
+      messageInput.value = 'اقترحي لي أهم استخدامات مواءمة AI للزوار بشكل عملي.';
+      messageInput.focus();
+    });
+
+    renderMiniPrograms();
+    resetChat();
+    loadQuota();
+  </script>
+<div class="toast" id="toast" role="status" aria-live="polite"></div><script src="/site.js"></script></body>
+</html>
